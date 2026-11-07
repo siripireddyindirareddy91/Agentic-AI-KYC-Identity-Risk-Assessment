@@ -11,3 +11,5 @@ uploads/
 
 .vercel
 .env*
+!.env.example
+*.tsbuildinfo

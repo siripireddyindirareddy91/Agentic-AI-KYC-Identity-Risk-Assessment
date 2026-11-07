@@ -1,0 +1,13 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports: ["8000:8000"]
+    environment:
+      DEMO_MODE: "true"
+      DATABASE_URL: sqlite:////data/sentinel.db
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET}
+    volumes: ["sentinel-data:/data"]
+volumes:
+  sentinel-data:
