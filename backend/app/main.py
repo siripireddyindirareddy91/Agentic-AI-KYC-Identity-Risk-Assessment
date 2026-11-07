@@ -28,6 +28,7 @@ class Record(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 Base.metadata.create_all(engine)
 def now(): return datetime.now(timezone.utc).isoformat()
+def seed_id(kind,index): return str(uuid.uuid5(uuid.NAMESPACE_URL,f'sentinel-synthetic-v1/{kind}/{index}'))
 def put(kind, data, id=None):
     id = id or data.get('id') or str(uuid.uuid4())
     data = {**data, 'id':id, 'updated_at':now()}
@@ -101,7 +102,7 @@ def node(index):
             output='Recommendation: human review required before any final approval or rejection'
         elif index==7:
             existing=[r for r in items('human_review_tasks') if r['application_id']==a['id'] and r['status']=='Pending']
-            if not existing: put('human_review_tasks',{'application_id':a['id'],'customer_id':c['id'],'name':c['name'],'status':'Pending','risk':state['risk'],'created_at':now()})
+            if not existing: put('human_review_tasks',{'application_id':a['id'],'customer_id':c['id'],'name':c['name'],'status':'Pending','risk':state['risk'],'created_at':now()},'review-'+a['id'])
             output='Application routed to an authorized human reviewer'
         else: output='Structured investigation report generated; PDF available on request'
         event={'application_id':a['id'],'agent':AGENTS[index],'status':'Completed','duration_ms':round((time.perf_counter()-start)*1000,2),'output':output,'timestamp':now()}
@@ -127,8 +128,8 @@ def seed():
     names=['Alex Morgan Demo','Priya Sharma Demo','Liam Anderson Demo','Sofia Chen Demo','Jordan Ellis Demo','Aarav Patel Demo','Emma Wilson Demo','Oliver Brown Demo','Taylor Quinn Demo','Noah Williams Demo','Isabella Garcia Demo','Ethan Davis Demo','Mia Martinez Demo','Lucas Robinson Demo','Amelia Clark Demo','James Lewis Demo','Charlotte Walker Demo','Benjamin Hall Demo','Harper Young Demo','Henry King Demo']
     actor={'email':'system@sentinel.demo'}
     for i,name in enumerate(names):
-        c=put('customers',{'name':name,'email':f'customer{i+1}@example.invalid','dob':'1990-05-15','phone':'+1 202 555 01'+str(i).zfill(2),'address':f'{i+10} Synthetic Avenue','city':'Demo City','country':['India','United States','United Kingdom','Singapore'][i%4],'nationality':'Demo','occupation':'Professional','customer_type':'Individual','synthetic':True,'created_at':(datetime.now(timezone.utc)-timedelta(days=20-i)).isoformat()})
-        a=put('kyc_applications',{'customer_id':c['id'],'name':name,'status':'Draft','document_type':'Passport','document_hash':hashlib.sha256(f'SYNTHETIC-{i if i!=6 else 1}'.encode()).hexdigest(),'document_last4':f'{i:04}','expiry':'2020-01-01' if i%3==0 else '2030-01-01','consent':True,'synthetic':True,'created_at':c['created_at']})
+        c=put('customers',{'name':name,'email':f'customer{i+1}@example.invalid','dob':'1990-05-15','phone':'+1 202 555 01'+str(i).zfill(2),'address':f'{i+10} Synthetic Avenue','city':'Demo City','country':['India','United States','United Kingdom','Singapore'][i%4],'nationality':'Demo','occupation':'Professional','customer_type':'Individual','synthetic':True,'created_at':(datetime.now(timezone.utc)-timedelta(days=20-i)).isoformat()},seed_id('customer',i))
+        a=put('kyc_applications',{'customer_id':c['id'],'name':name,'status':'Draft','document_type':'Passport','document_hash':hashlib.sha256(f'SYNTHETIC-{i if i!=6 else 1}'.encode()).hexdigest(),'document_last4':f'{i:04}','expiry':'2020-01-01' if i%3==0 else '2030-01-01','consent':True,'synthetic':True,'created_at':c['created_at']},seed_id('application',i))
         for j in range(2 if i<10 else 1): put('identity_documents',{'application_id':a['id'],'name':f'synthetic-identity-{i+1}-{j+1}.txt','mime':'text/plain','size':120,'extracted':{'name':'Different Demo Name' if i%5==0 else name,'dob':c['dob']},'confidence':1.0,'synthetic':True,'status':'Processed','created_at':now()})
         a=run(a,actor)
         if i>7:
