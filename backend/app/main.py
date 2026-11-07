@@ -123,16 +123,21 @@ def run(a,actor):
     audit(actor,'Verification workflow completed',a['id']); notify('Human review required',a['id'])
     return a
 def seed():
-    if items('customers'): return
-    put('system_settings',settings(),'settings')
+    existing_ids={c['id'] for c in items('customers')}
+    if not items('system_settings'): put('system_settings',settings(),'settings')
     names=['Alex Morgan Demo','Priya Sharma Demo','Liam Anderson Demo','Sofia Chen Demo','Jordan Ellis Demo','Aarav Patel Demo','Emma Wilson Demo','Oliver Brown Demo','Taylor Quinn Demo','Noah Williams Demo','Isabella Garcia Demo','Ethan Davis Demo','Mia Martinez Demo','Lucas Robinson Demo','Amelia Clark Demo','James Lewis Demo','Charlotte Walker Demo','Benjamin Hall Demo','Harper Young Demo','Henry King Demo']
+    names+=['Alex Morgan Demo','Nora Bennett Demo','Arjun Rao Demo','Grace Thompson Demo','Leo Fischer Demo','Zara Ahmed Demo','Mateo Silva Demo','Aisha Khan Demo','Daniel Kim Demo','Eva Rossi Demo','Samuel Reed Demo','Chloe Martin Demo']
     actor={'email':'system@sentinel.demo'}
     for i,name in enumerate(names):
+        if seed_id('customer',i) in existing_ids: continue
         c=put('customers',{'name':name,'email':f'customer{i+1}@example.invalid','dob':'1990-05-15','phone':'+1 202 555 01'+str(i).zfill(2),'address':f'{i+10} Synthetic Avenue','city':'Demo City','country':['India','United States','United Kingdom','Singapore'][i%4],'nationality':'Demo','occupation':'Professional','customer_type':'Individual','synthetic':True,'created_at':(datetime.now(timezone.utc)-timedelta(days=20-i)).isoformat()},seed_id('customer',i))
-        a=put('kyc_applications',{'customer_id':c['id'],'name':name,'status':'Draft','document_type':'Passport','document_hash':hashlib.sha256(f'SYNTHETIC-{i if i!=6 else 1}'.encode()).hexdigest(),'document_last4':f'{i:04}','expiry':'2020-01-01' if i%3==0 else '2030-01-01','consent':True,'synthetic':True,'created_at':c['created_at']},seed_id('application',i))
-        for j in range(2 if i<10 else 1): put('identity_documents',{'application_id':a['id'],'name':f'synthetic-identity-{i+1}-{j+1}.txt','mime':'text/plain','size':120,'extracted':{'name':'Different Demo Name' if i%5==0 else name,'dob':c['dob']},'confidence':1.0,'synthetic':True,'status':'Processed','created_at':now()})
+        if i>=20:
+            c=put('customers',{**c,'created_at':(datetime.now(timezone.utc)-timedelta(days=31-i)).isoformat(),'address':'' if i==20 else c['address'],'occupation':['Software Engineer','Business Owner','Researcher','Consultant'][i%4],'customer_type':'Business' if i%4==0 else 'Individual'})
+        duplicate_index=0 if i==20 else 1 if i==6 else i
+        a=put('kyc_applications',{'customer_id':c['id'],'name':name,'status':'Draft','document_type':['Passport','Driving License','National Identity Card'][i%3],'document_hash':hashlib.sha256(f'SYNTHETIC-{duplicate_index}'.encode()).hexdigest(),'document_last4':f'{i:04}','expiry':'2020-01-01' if i%3==0 or i==20 else '2030-01-01','consent':True,'synthetic':True,'created_at':c['created_at']},seed_id('application',i))
+        for j in range(2 if i<10 or i>=20 else 1): put('identity_documents',{'application_id':a['id'],'name':f'synthetic-identity-{i+1}-{j+1}.txt','mime':'text/plain','size':120,'extracted':{'name':'Different Demo Name' if i%5==0 else name,'dob':c['dob']},'confidence':1.0,'synthetic':True,'status':'Processed','created_at':now()},seed_id('document',f'{i}-{j}'))
         a=run(a,actor)
-        if i>7:
+        if 7<i<20 or i>=26:
             put('kyc_applications',{**a,'status':'Approved' if i%4 else 'Rejected'})
             for r in items('human_review_tasks'):
                 if r['application_id']==a['id']:

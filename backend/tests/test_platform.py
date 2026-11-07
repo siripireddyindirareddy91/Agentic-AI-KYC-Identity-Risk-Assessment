@@ -10,9 +10,16 @@ def auth(email='admin@sentinel.demo'):
 def test_authentication_required(): assert client.get('/api/customers').status_code==401
 def test_invalid_credentials(): assert client.post('/api/auth/login',json={'email':'admin@sentinel.demo','password':'bad'}).status_code==401
 def test_seed_counts():
- h=auth(); assert len(client.get('/api/customers',headers=h).json())>=20
- assert len(client.get('/api/documents',headers=h).json())>=30
+ h=auth(); assert len(client.get('/api/customers',headers=h).json())>=32
+ assert len(client.get('/api/documents',headers=h).json())>=54
  assert len(client.get('/api/reviews/pending',headers=h).json())>=5
+def test_expanded_seed_has_critical_case_and_is_idempotent():
+ from backend.app.main import seed, seed_id
+ h=auth(); before=len(client.get('/api/customers',headers=h).json()); seed()
+ assert len(client.get('/api/customers',headers=h).json())==before
+ case=client.get('/api/kyc/applications/'+seed_id('application',20),headers=h).json()
+ assert case['risk']['level']=='Critical' and case['status']=='Human Review'
+ assert {f['factor'] for f in case['findings']}=={'mismatch','expired','duplicate','incomplete','screening'}
 def test_risk_deduplicates_and_caps():
  assert score_risk([{'factor':'mismatch'}]*4,DEFAULT_WEIGHTS)['score']==25
  assert score_risk([{'factor':f} for f in DEFAULT_WEIGHTS],DEFAULT_WEIGHTS)['score']==100

@@ -1,2 +1,4 @@
 -- backend.app.main.seed() generates synthetic data idempotently on startup.
--- 20 customers, 20 applications, 30 documents, 20 assessments, 180 executions, 8 reviews.
+-- Fresh database: 32 customers/applications, 54 documents, 32 assessments,
+-- 288 agent executions and 14 pending human reviews, including a critical-risk case.
+-- Existing seed records and human decisions are preserved when adding new samples.
