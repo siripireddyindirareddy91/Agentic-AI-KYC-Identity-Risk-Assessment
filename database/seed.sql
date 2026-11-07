@@ -1,0 +1,2 @@
+-- backend.app.main.seed() generates synthetic data idempotently on startup.
+-- 20 customers, 20 applications, 30 documents, 20 assessments, 180 executions, 8 reviews.

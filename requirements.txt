@@ -1,0 +1,12 @@
+fastapi>=0.115,<1
+sqlalchemy>=2,<3
+python-multipart>=0.0.20
+PyMuPDF>=1.25
+Pillow>=11
+pytesseract>=0.3.13
+langgraph>=1,<2
+reportlab>=4
+psycopg2-binary>=2.9
+PyJWT>=2.10
+bcrypt>=4
+uvicorn>=0.34
